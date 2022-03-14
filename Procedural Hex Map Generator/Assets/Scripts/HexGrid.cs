@@ -19,13 +19,17 @@ public class HexGrid : MonoBehaviour
     public Text cellLabelPrefab;
     private Canvas gridCanvas;
 
+    private HexMesh hexMesh;
+
     /// <summary>
     /// Determine the size of the cell grid and fill with cells.
     /// Visualize cell coordinates using a canvas.
+    /// Retrieve the hex mesh.
     /// </summary>
     private void Awake()
     {
         gridCanvas = GetComponentInChildren<Canvas>();
+        hexMesh = GetComponentInChildren<HexMesh>();
 
         cells = new HexCell[height * width];
 
@@ -36,6 +40,14 @@ public class HexGrid : MonoBehaviour
                 CreateCell(x, z, i++);
             }
         }
+    }
+
+    /// <summary>
+    /// Triangulate cells for the grid. 
+    /// </summary>
+    private void Start()
+    {
+        hexMesh.Triangulate(cells);
     }
 
     /// <summary>
