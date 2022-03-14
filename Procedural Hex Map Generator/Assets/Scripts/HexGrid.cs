@@ -7,11 +7,15 @@ using UnityEngine.UI;
 /// <summary>
 /// Create Hex grid component composed of Hex cell prefabs.
 /// Give the grid a width and height, use the cell prefab to fill the grid with cells.
+/// Each cell can be touched, which shows the cell coordinates and colors them magenta.
 /// </summary>
 public class HexGrid : MonoBehaviour
 {
     public int width = 6;
     public int height = 6;
+
+    public Color defaultColor = Color.white;
+    public Color touchedColor = Color.magenta;
 
     public HexCell cellPrefab;
     private HexCell[] cells;
@@ -50,6 +54,14 @@ public class HexGrid : MonoBehaviour
         hexMesh.Triangulate(cells);
     }
 
+    private void Update()
+    {
+        if (Input.GetMouseButton(0))
+        {
+            HandleInput();
+        }
+    }
+
     /// <summary>
     /// Each cell created will have their xz sizes equal 10, y size is zero to make it lay flat.
     /// Position the cell on the grid accordingly.
@@ -77,11 +89,42 @@ public class HexGrid : MonoBehaviour
         cell.transform.SetParent(transform, false);
         cell.transform.localPosition = position;
         cell.coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
+        cell.color = defaultColor;
 
         Text label = Instantiate<Text>(cellLabelPrefab);
         label.rectTransform.SetParent(gridCanvas.transform, false);
         label.rectTransform.anchoredPosition =
             new Vector2(position.x, position.z);
         label.text = cell.coordinates.ToStringOnSeparateLines();
+    }
+
+    /// <summary>
+    /// Shoot a ray into the scene from the mouse position to "touch" a cell.
+    /// </summary>
+    private void HandleInput()
+    {
+        Ray inputRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        RaycastHit hit;
+        if (Physics.Raycast(inputRay, out hit))
+        {
+            TouchCell(hit.point);
+        }
+    }
+
+    /// <summary>
+    /// Once the ray hits the cell,
+    /// convert cell coordinates to the appropriate array index.
+    /// Then grab the cell, change its color, triangulate the mesh again.
+    /// </summary>
+    /// <param name="position"></param>
+    private void TouchCell(Vector3 position)
+    {
+        position = transform.InverseTransformPoint(position);
+        HexCoordinates coordinates = HexCoordinates.FromPosition(position);
+        //Debug.Log("Touched at " + coordinates.ToString());
+        int index = coordinates.X + coordinates.Z * width + coordinates.Z / 2;
+        HexCell cell = cells[index];
+        cell.color = touchedColor;
+        hexMesh.Triangulate(cells);
     }
 }

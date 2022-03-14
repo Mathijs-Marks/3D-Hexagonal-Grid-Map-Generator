@@ -235,6 +235,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   width: 6
   height: 6
+  defaultColor: {r: 1, g: 1, b: 1, a: 1}
+  touchedColor: {r: 1, g: 0, b: 1, a: 1}
   cellPrefab: {fileID: 5172567822879819682, guid: 96bf81715693f3c44a3d4af567ae3b62, type: 3}
   cellLabelPrefab: {fileID: 6140196833351840513, guid: 18b5ac57d32dcd14e8372e110765e04e, type: 3}
 --- !u!4 &296503368
@@ -410,7 +412,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 2fc40f030e00fb540b4600747b58dd60, type: 2}
+  - {fileID: 2100000, guid: 4706fceb784a3cd4994ef8ea65bd86e3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -516,10 +518,10 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -10}
+  m_LocalRotation: {x: 0.46174863, y: 0, z: 0, w: 0.8870109}
+  m_LocalPosition: {x: 45, y: 60, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 55, y: 0, z: 0}

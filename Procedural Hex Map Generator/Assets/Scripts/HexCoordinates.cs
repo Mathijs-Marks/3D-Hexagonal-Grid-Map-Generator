@@ -46,6 +46,54 @@ public struct HexCoordinates
     }
 
     /// <summary>
+    /// Convert Vector3 position to Hex coordinates.
+    /// Divide X by the horizontal width of a hexagon.
+    /// Because Y is the mirror of X, the negative of X gives Y.
+    /// Every two rows, shift an entire unit to the left to take the Z axis into account.
+    /// Derive Z and round the values to integers.
+    /// </summary>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public static HexCoordinates FromPosition(Vector3 position)
+    {
+        float x = position.x / (HexMetrics.innerRadius * 2f);
+        float y = -x;
+        float offset = position.z / (HexMetrics.outerRadius * 3f);
+
+        x -= offset;
+        y -= offset;
+
+        int iX = Mathf.RoundToInt(x);
+        int iY = Mathf.RoundToInt(y);
+        int iZ = Mathf.RoundToInt(-x -y);
+
+        /*
+         * Rounding near the edges produce wrong numbers that mess up the cube coordinates.
+         * Solution: discard the coordinate with the largest rounding delta.
+         * Reconstruct the discarded coordinate from the other two.
+         * Only X and Z required, so no need to reconstruct Y.
+         */
+        if (iX + iY + iZ != 0)
+        {
+            //Debug.LogWarning("rounding error!");
+            float dX = Mathf.Abs(x - iX);
+            float dY = Mathf.Abs(y - iY);
+            float dZ = Mathf.Abs(-x -y - iZ);
+
+            if (dX > dY && dX > dZ)
+            {
+                iX = -iY - iZ;
+            }
+            else if (dZ > dY)
+            {
+                iZ = -iX - iY;
+            }
+        }
+
+        return new HexCoordinates(iX, iZ);
+    }
+
+    /// <summary>
     /// Default ToString returns the struct's type name.
     /// This method overrides ToString to return the coordinates on a single line.
     /// </summary>

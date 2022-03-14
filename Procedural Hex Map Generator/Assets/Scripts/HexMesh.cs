@@ -14,18 +14,24 @@ public class HexMesh : MonoBehaviour
     private List<Vector3> vertices;
     private List<int> triangles;
 
+    private MeshCollider meshCollider;
+
+    private List<Color> colors;
+
     private void Awake()
     {
         GetComponent<MeshFilter>().mesh = hexMesh = new Mesh();
+        meshCollider = gameObject.AddComponent<MeshCollider>();
         hexMesh.name = "Hex Mesh";
         vertices = new List<Vector3>();
         triangles = new List<int>();
+        colors = new List<Color>();
     }
 
     /// <summary>
     /// Clear old data.
     /// Loop through all the cells, triangulate them individually.
-    /// Assign vertices and triangles to the mesh, and recalculate mesh normals.
+    /// Assign vertices, triangles, and colors to the mesh, and recalculate mesh normals.
     /// </summary>
     /// <param name="cells"></param>
     public void Triangulate(HexCell[] cells)
@@ -33,6 +39,7 @@ public class HexMesh : MonoBehaviour
         hexMesh.Clear();
         vertices.Clear();
         triangles.Clear();
+        colors.Clear();
 
         for (int i = 0; i < cells.Length; i++)
         {
@@ -41,13 +48,16 @@ public class HexMesh : MonoBehaviour
 
         hexMesh.vertices = vertices.ToArray();
         hexMesh.triangles = triangles.ToArray();
+        hexMesh.colors = colors.ToArray();
         hexMesh.RecalculateNormals();
+        meshCollider.sharedMesh = hexMesh;
     }
 
     /// <summary>
     /// Start with first triangle:
     /// First vertex is center of hex, other two vertices are the first and second corners, relative to its center.
     /// Repeat this 5 more times to form a hexagon shape.
+    /// Add color when triangulating.
     /// </summary>
     /// <param name="cell"></param>
     private void Triangulate(HexCell cell)
@@ -60,7 +70,19 @@ public class HexMesh : MonoBehaviour
                 center + HexMetrics.corners[i],
                 center + HexMetrics.corners[i + 1] // Tries to grab a seventh corner, which gives an error. Duplicate first corner to prevent going out of bounds.
             );
+            AddTriangleColor(cell.color);
         }
+    }
+
+    /// <summary>
+    /// Add color data for each triangle when triangulating.
+    /// </summary>
+    /// <param name="color"></param>
+    private void AddTriangleColor(Color color)
+    {
+        colors.Add(color);
+        colors.Add(color);
+        colors.Add(color);
     }
 
     /// <summary>
