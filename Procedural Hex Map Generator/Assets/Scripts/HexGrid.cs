@@ -15,7 +15,7 @@ public class HexGrid : MonoBehaviour
     public int height = 6;
 
     public Color defaultColor = Color.white;
-    public Color touchedColor = Color.magenta;
+    //public Color touchedColor = Color.magenta;
 
     public HexCell cellPrefab;
     private HexCell[] cells;
@@ -52,14 +52,6 @@ public class HexGrid : MonoBehaviour
     private void Start()
     {
         hexMesh.Triangulate(cells);
-    }
-
-    private void Update()
-    {
-        if (Input.GetMouseButton(0))
-        {
-            HandleInput();
-        }
     }
 
     /// <summary>
@@ -99,32 +91,18 @@ public class HexGrid : MonoBehaviour
     }
 
     /// <summary>
-    /// Shoot a ray into the scene from the mouse position to "touch" a cell.
-    /// </summary>
-    private void HandleInput()
-    {
-        Ray inputRay = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-        if (Physics.Raycast(inputRay, out hit))
-        {
-            TouchCell(hit.point);
-        }
-    }
-
-    /// <summary>
     /// Once the ray hits the cell,
     /// convert cell coordinates to the appropriate array index.
     /// Then grab the cell, change its color, triangulate the mesh again.
     /// </summary>
     /// <param name="position"></param>
-    private void TouchCell(Vector3 position)
+    public void ColorCell(Vector3 position, Color color)
     {
         position = transform.InverseTransformPoint(position);
         HexCoordinates coordinates = HexCoordinates.FromPosition(position);
-        //Debug.Log("Touched at " + coordinates.ToString());
         int index = coordinates.X + coordinates.Z * width + coordinates.Z / 2;
         HexCell cell = cells[index];
-        cell.color = touchedColor;
+        cell.color = color;
         hexMesh.Triangulate(cells);
     }
 }
