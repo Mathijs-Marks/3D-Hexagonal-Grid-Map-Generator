@@ -54,6 +54,7 @@ public class HexGrid : MonoBehaviour
     /// Each cell created will have their xz sizes equal 10, y size is zero to make it lay flat.
     /// Position the cell on the grid accordingly.
     /// For each cell, render a UI text element, showing the coordinates of the cell.
+    /// Use HexCoordinates struct to display the correct cell coordinates.
     /// </summary>
     /// <param name="x"></param>
     /// <param name="z"></param>
@@ -75,11 +76,12 @@ public class HexGrid : MonoBehaviour
         HexCell cell = cells[i] = Instantiate<HexCell>(cellPrefab);
         cell.transform.SetParent(transform, false);
         cell.transform.localPosition = position;
+        cell.coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
 
         Text label = Instantiate<Text>(cellLabelPrefab);
         label.rectTransform.SetParent(gridCanvas.transform, false);
         label.rectTransform.anchoredPosition =
             new Vector2(position.x, position.z);
-        label.text = x.ToString() + "\n" + z.ToString();
+        label.text = cell.coordinates.ToStringOnSeparateLines();
     }
 }
