@@ -14,7 +14,7 @@ public class HexMesh : MonoBehaviour
     private List<Vector3> vertices;
     private List<int> triangles;
 
-    private MeshCollider meshCollider;
+    private MeshCollider meshCollider; // Used to interact with (colour) the hexagons.
 
     private List<Color> colors;
 
@@ -32,6 +32,7 @@ public class HexMesh : MonoBehaviour
     /// Clear old data.
     /// Loop through all the cells, triangulate them individually.
     /// Assign vertices, triangles, and colors to the mesh, and recalculate mesh normals.
+    /// Assign collider to the mesh.
     /// </summary>
     /// <param name="cells"></param>
     public void Triangulate(HexCell[] cells)
@@ -67,11 +68,10 @@ public class HexMesh : MonoBehaviour
     }
 
     /// <summary>
-    /// Define the center, first & second solid corners of the hexagon's triangle.
-    /// Add this triangle and colour it.
-    /// Use bridge offset distance between solid corners and outer edge to define non-solid corners.
-    /// Add a square shaped quad, using the solid and not-solid corners.
-    /// When colouring the quad, check its previous, current, and next neighbours and colour accordingly.
+    /// Define center, first & second solid corner of the hexagon's triangle.
+    /// Draw and colour the triangle.
+    /// If the direction value is smaller and/or equal to SE (2):
+    /// Triangulate connections to other hexagons.
     /// </summary>
     /// <param name="direction"></param>
     /// <param name="cell"></param>
@@ -86,57 +86,47 @@ public class HexMesh : MonoBehaviour
         AddTriangle(center, v1, v2);
         AddTriangleColor(cell.color);
 
+        if (direction <= HexDirection.SE)
+        {
+            TriangulateConnection(direction, cell, v1, v2);
+        }
+    }
+
+    /// <summary>
+    /// Retrieve the cell's neighbours, if there are any.
+    /// Determine bridge vectors to neighbour(s).
+    /// Draw the rectangular bridge(s) to the neighbour(s) and colour them.
+    /// Retrieve the next neighbour of the hexagon.
+    /// If the direction value is smaller and/or equal than E (1) AND there's a neighbour present:
+    /// Add a triangle to fill in the gap and colour it.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <param name="cell"></param>
+    /// <param name="v1"></param>
+    /// <param name="v2"></param>
+    private void TriangulateConnection(
+        HexDirection direction, HexCell cell, Vector3 v1, Vector3 v2)
+    {
+        HexCell neighbour = cell.GetNeighbour(direction);
+        if (neighbour == null)
+            return;
+
         // Determine v3 and v4 vectors by adding the bridge factor to v1 and v2.
         Vector3 bridge = HexMetrics.GetBridge(direction);
         Vector3 v3 = v1 + bridge;
         Vector3 v4 = v2 + bridge;
-        //Vector3 v3 = center + HexMetrics.GetFirstCorner(direction);
-        //Vector3 v4 = center + HexMetrics.GetSecondCorner(direction);
 
         // Create square quad with these vectors.
-        AddQuad(v1, v2, v3, v4);
-
-        // Border cells don't have neighbours, substitute these for their own cell using: ?? cell;
-        HexCell prevNeighbour = cell.GetNeighbour(direction.Previous()) ?? cell;
-        HexCell neighbour = cell.GetNeighbour(direction) ?? cell;
-        HexCell nextNeighbour = cell.GetNeighbour(direction.Next()) ?? cell;
-
-        //AddQuadColor(
-        //    cell.color,
-        //    cell.color,
-        //    (cell.color + prevNeighbour.color + neighbour.color) / 3f,
-        //    (cell.color + neighbour.color + nextNeighbour.color) / 3f
-        //    );
-
         // Bridge quad only needs two colours.
-        Color bridgeColor = (cell.color + neighbour.color) * 0.5f;
-        AddQuadColor(cell.color, bridgeColor);
+        AddQuad(v1, v2, v3, v4);
+        AddQuadColor(cell.color, neighbour.color);
 
-        /*
-         * Add a first of two triangles to fill in the gaps.
-         * The first vertex of the triangle is the cell's colour.
-         * The second vertex is a three-colour blend.
-         * The third vertex has the same colour as halfway across the bridge.
-         */
-        AddTriangle(v1, center + HexMetrics.GetFirstCorner(direction), v3);
-        AddTriangleColor(
-            cell.color,
-            (cell.color + prevNeighbour.color + neighbour.color) / 3f,
-            bridgeColor
-            );
-
-        /*
-         * Add second of two triangles to fill in the gaps.
-         * The first vertex of the triangle is the cell's colour.
-         * The second vertex has the same colour as halfway across the bridge.
-         * The third vertex is a three-colour blend.
-         */
-        AddTriangle(v2, v4, center + HexMetrics.GetSecondCorner(direction));
-        AddTriangleColor(
-            cell.color,
-            bridgeColor,
-            (cell.color + neighbour.color + nextNeighbour.color) / 3f
-            );
+        HexCell nextNeighbour = cell.GetNeighbour(direction.Next());
+        if (direction <= HexDirection.E && nextNeighbour != null)
+        {
+            AddTriangle(v2, v4, v2 + HexMetrics.GetBridge(direction.Next()));
+            AddTriangleColor(cell.color, neighbour.color, nextNeighbour.color);
+        }
     }
 
     /// <summary>
@@ -207,7 +197,7 @@ public class HexMesh : MonoBehaviour
     }
 
     /// <summary>
-    /// Give each vertex of the quad a colour.
+    /// Give each vertex of the trapezoid quad a colour.
     /// </summary>
     /// <param name="c1"></param>
     /// <param name="c2"></param>
@@ -221,6 +211,11 @@ public class HexMesh : MonoBehaviour
         colors.Add(c4);
     }
 
+    /// <summary>
+    /// Give each vertex of the rectangular quad a colour.
+    /// </summary>
+    /// <param name="c1"></param>
+    /// <param name="c2"></param>
     private void AddQuadColor(Color c1, Color c2)
     {
         colors.Add(c1);
