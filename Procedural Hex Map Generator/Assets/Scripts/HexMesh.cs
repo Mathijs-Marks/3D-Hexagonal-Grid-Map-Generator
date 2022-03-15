@@ -54,24 +54,49 @@ public class HexMesh : MonoBehaviour
     }
 
     /// <summary>
-    /// Start with first triangle:
-    /// First vertex is center of hex, other two vertices are the first and second corners, relative to its center.
-    /// Repeat this 5 more times to form a hexagon shape.
-    /// Add color when triangulating.
+    /// (Instead of looping through the 6 hexagon corners, loop through the six directions)
+    /// Using the directions enumerator, identify the cell parts and triangulate them.
     /// </summary>
     /// <param name="cell"></param>
     private void Triangulate(HexCell cell)
     {
-        for (int i = 0; i < 6; i++)
+        for (HexDirection d = HexDirection.NE; d <= HexDirection.NW; d++)
         {
-            Vector3 center = cell.transform.localPosition;
-            AddTriangle(
-                center,
-                center + HexMetrics.corners[i],
-                center + HexMetrics.corners[i + 1] // Tries to grab a seventh corner, which gives an error. Duplicate first corner to prevent going out of bounds.
-            );
-            AddTriangleColor(cell.color);
+            Triangulate(d, cell);
         }
+    }
+
+    /// <summary>
+    /// Start with first triangle:
+    /// First vertex is center of hex, other two vertices are the first and second corners, relative to its center.
+    /// Repeat this 5 more times to form a hexagon shape.
+    /// Add color when triangulating. Blend colors with neighbouring cells.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <param name="cell"></param>
+    private void Triangulate(HexDirection direction, HexCell cell)
+    {
+        Vector3 center = cell.transform.localPosition;
+        AddTriangle(
+            center,
+            //center + HexMetrics.corners[(int)direction],
+            //center + HexMetrics.corners[(int)direction + 1] // Tries to grab a seventh corner, which gives an error. Duplicate first corner to prevent going out of bounds.
+            // Based on the current direction, take the center of the vertex, then the first corner, then the second corner.
+            center + HexMetrics.GetFirstCorner(direction),
+            center + HexMetrics.GetSecondCorner(direction)
+        );
+        // Border cells don't have neighbours, substitute these for their own cell using: ?? cell;
+        HexCell prevNeighbour = cell.GetNeighbour(direction.Previous()) ?? cell;
+        HexCell neighbour = cell.GetNeighbour(direction) ?? cell;
+        HexCell nextNeighbour = cell.GetNeighbour(direction.Next()) ?? cell;
+
+        //Color edgeColor = (cell.color + neighbour.color) * 0.5f;
+
+        AddTriangleColor(
+            cell.color,
+            (cell.color + prevNeighbour.color + neighbour.color) / 3f,
+            (cell.color + neighbour.color + nextNeighbour.color) / 3f
+            );
     }
 
     /// <summary>
@@ -83,6 +108,19 @@ public class HexMesh : MonoBehaviour
         colors.Add(color);
         colors.Add(color);
         colors.Add(color);
+    }
+
+    /// <summary>
+    /// Allows for adding separate color data for each vertex.
+    /// </summary>
+    /// <param name="c1"></param>
+    /// <param name="c2"></param>
+    /// <param name="c3"></param>
+    private void AddTriangleColor(Color c1, Color c2, Color c3)
+    {
+        colors.Add(c1);
+        colors.Add(c2);
+        colors.Add(c3);
     }
 
     /// <summary>

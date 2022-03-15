@@ -26,4 +26,24 @@ public static class HexDirectionExtensions
         // One-liner if-statement.
         return (int) direction < 3 ? (direction + 3) : (direction - 3);
     }
+
+    /// <summary>
+    /// If the direction is NW, return direction - 1, making it the previous direction.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public static HexDirection Previous(this HexDirection direction)
+    {
+        return direction == HexDirection.NE ? HexDirection.NW : (direction - 1);
+    }
+
+    /// <summary>
+    /// If the direction is NE, return direction + 1, making it the next direction.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public static HexDirection Next(this HexDirection direction)
+    {
+        return direction == HexDirection.NW ? HexDirection.NE : (direction + 1);
+    }
 }
