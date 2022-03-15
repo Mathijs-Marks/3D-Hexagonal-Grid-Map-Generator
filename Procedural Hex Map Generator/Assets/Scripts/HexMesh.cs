@@ -116,6 +116,9 @@ public class HexMesh : MonoBehaviour
         Vector3 v3 = v1 + bridge;
         Vector3 v4 = v2 + bridge;
 
+        // In case of edge connections, override the height of the other end of the bridge.
+        v3.y = v4.y = neighbour.Elevation * HexMetrics.elevationStep;
+
         // Create square quad with these vectors.
         // Bridge quad only needs two colours.
         AddQuad(v1, v2, v3, v4);
@@ -124,7 +127,11 @@ public class HexMesh : MonoBehaviour
         HexCell nextNeighbour = cell.GetNeighbour(direction.Next());
         if (direction <= HexDirection.E && nextNeighbour != null)
         {
-            AddTriangle(v2, v4, v2 + HexMetrics.GetBridge(direction.Next()));
+            // In case of corner connections, override the height of the other end of the triangle.
+            Vector3 v5 = v2 + HexMetrics.GetBridge(direction.Next());
+            v5.y = nextNeighbour.Elevation * HexMetrics.elevationStep;
+            //AddTriangle(v2, v4, v2 + HexMetrics.GetBridge(direction.Next()));
+            AddTriangle(v2, v4, v5);
             AddTriangleColor(cell.color, neighbour.color, nextNeighbour.color);
         }
     }

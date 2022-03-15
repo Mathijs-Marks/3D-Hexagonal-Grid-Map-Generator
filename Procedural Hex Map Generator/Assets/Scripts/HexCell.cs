@@ -7,11 +7,40 @@ using UnityEngine;
 /// </summary>
 public class HexCell : MonoBehaviour
 {
+    /// <summary>
+    /// Public property that changes the elevation of a cell.
+    /// Value is supplied through the Map Editor elevation slider.
+    /// Change the Y value of the cell, according to the elevation value.
+    /// Update the cell's position.
+    /// Also retrieve the Y position of the coordinate UI element of the cell.
+    /// Change the Z value of the UI element to match the elevation of the cell.
+    /// Update the UI element's position.
+    /// </summary>
+    public int Elevation
+    {
+        get { return elevation; }
+        set
+        {
+            elevation = value;
+            Vector3 position = transform.localPosition;
+            position.y = value * HexMetrics.elevationStep;
+            transform.localPosition = position;
+
+            Vector3 uiPosition = uiRect.localPosition;
+            uiPosition.z = elevation * -HexMetrics.elevationStep;
+            uiRect.localPosition = uiPosition;
+        }
+    }
+    
     public HexCoordinates coordinates;
 
     public Color color;
 
+    public RectTransform uiRect;
+
     [SerializeField] private HexCell[] neighbours;
+
+    private int elevation;
 
     /// <summary>
     /// Retrieve a cell's neighbours in one direction.
