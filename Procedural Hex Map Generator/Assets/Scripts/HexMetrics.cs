@@ -14,6 +14,8 @@ public static class HexMetrics
 {
     public const float outerRadius = 10f;
     public const float innerRadius = (outerRadius * 0.866025404f);
+    public const float solidFactor = 0.75f;
+    public const float blendFactor = 1f - solidFactor;
 
     private static Vector3[] corners =
     {
@@ -27,7 +29,8 @@ public static class HexMetrics
     };
 
     /// <summary>
-    /// Grab the first outer corner of the triangle, based on current direction.
+    /// Grab the first solid (v1) corner of the triangle, based on current direction.
+    /// Used to draw the inner hexagon triangle.
     /// </summary>
     /// <param name="direction"></param>
     /// <returns></returns>
@@ -37,12 +40,47 @@ public static class HexMetrics
     }
 
     /// <summary>
-    /// Grab the second outer corner of the triangle, based on current direction.
+    /// Grab the second solid (v2) corner of the triangle, based on current direction.
+    /// Used to draw the inner hexagon triangle.
     /// </summary>
     /// <param name="direction"></param>
     /// <returns></returns>
     public static Vector3 GetSecondCorner(HexDirection direction)
     {
         return corners[(int) direction + 1];
+    }
+
+    /// <summary>
+    /// Grab the first non-solid corner (v3) of the triangle, based on the current direction.
+    /// Used, in unison with v1 and v2, to draw the outer hexagon quad.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public static Vector3 GetFirstSolidCorner(HexDirection direction)
+    {
+        return corners[(int) direction] * solidFactor;
+    }
+
+    /// <summary>
+    /// Grab the second non-solid corner (v4) of the triangle, based on the current direction.
+    /// Used, in unison with v1 and v2, to draw the outer hexagon quad.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public static Vector3 GetSecondSolidCorner(HexDirection direction)
+    {
+        return corners[(int) direction + 1] * solidFactor;
+    }
+
+    /// <summary>
+    /// Add the two non-solid corners (v3, v4) based on direction, multiply by 0.5, multiply by blend factor.
+    /// Result is bridge offset to determine the new v3 and v4 vectors for the bridge rectangle quad.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public static Vector3 GetBridge(HexDirection direction)
+    {
+        return (corners[(int) direction] + corners[(int) direction + 1]) *
+               0.5f * blendFactor;
     }
 }

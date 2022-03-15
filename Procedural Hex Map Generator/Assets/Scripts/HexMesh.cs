@@ -67,34 +67,74 @@ public class HexMesh : MonoBehaviour
     }
 
     /// <summary>
-    /// Start with first triangle:
-    /// First vertex is center of hex, other two vertices are the first and second corners, relative to its center.
-    /// Repeat this 5 more times to form a hexagon shape.
-    /// Add color when triangulating. Blend colors with neighbouring cells.
+    /// Define the center, first & second solid corners of the hexagon's triangle.
+    /// Add this triangle and colour it.
+    /// Use bridge offset distance between solid corners and outer edge to define non-solid corners.
+    /// Add a square shaped quad, using the solid and not-solid corners.
+    /// When colouring the quad, check its previous, current, and next neighbours and colour accordingly.
     /// </summary>
     /// <param name="direction"></param>
     /// <param name="cell"></param>
     private void Triangulate(HexDirection direction, HexCell cell)
     {
+        // Based on the current direction, take the center of the vertex, then the first corner, then the second corner.
         Vector3 center = cell.transform.localPosition;
-        AddTriangle(
-            center,
-            //center + HexMetrics.corners[(int)direction],
-            //center + HexMetrics.corners[(int)direction + 1] // Tries to grab a seventh corner, which gives an error. Duplicate first corner to prevent going out of bounds.
-            // Based on the current direction, take the center of the vertex, then the first corner, then the second corner.
-            center + HexMetrics.GetFirstCorner(direction),
-            center + HexMetrics.GetSecondCorner(direction)
-        );
+        Vector3 v1 = center + HexMetrics.GetFirstSolidCorner(direction);
+        Vector3 v2 = center + HexMetrics.GetSecondSolidCorner(direction);
+        
+        // Draw triangle and colour it.
+        AddTriangle(center, v1, v2);
+        AddTriangleColor(cell.color);
+
+        // Determine v3 and v4 vectors by adding the bridge factor to v1 and v2.
+        Vector3 bridge = HexMetrics.GetBridge(direction);
+        Vector3 v3 = v1 + bridge;
+        Vector3 v4 = v2 + bridge;
+        //Vector3 v3 = center + HexMetrics.GetFirstCorner(direction);
+        //Vector3 v4 = center + HexMetrics.GetSecondCorner(direction);
+
+        // Create square quad with these vectors.
+        AddQuad(v1, v2, v3, v4);
+
         // Border cells don't have neighbours, substitute these for their own cell using: ?? cell;
         HexCell prevNeighbour = cell.GetNeighbour(direction.Previous()) ?? cell;
         HexCell neighbour = cell.GetNeighbour(direction) ?? cell;
         HexCell nextNeighbour = cell.GetNeighbour(direction.Next()) ?? cell;
 
-        //Color edgeColor = (cell.color + neighbour.color) * 0.5f;
+        //AddQuadColor(
+        //    cell.color,
+        //    cell.color,
+        //    (cell.color + prevNeighbour.color + neighbour.color) / 3f,
+        //    (cell.color + neighbour.color + nextNeighbour.color) / 3f
+        //    );
 
+        // Bridge quad only needs two colours.
+        Color bridgeColor = (cell.color + neighbour.color) * 0.5f;
+        AddQuadColor(cell.color, bridgeColor);
+
+        /*
+         * Add a first of two triangles to fill in the gaps.
+         * The first vertex of the triangle is the cell's colour.
+         * The second vertex is a three-colour blend.
+         * The third vertex has the same colour as halfway across the bridge.
+         */
+        AddTriangle(v1, center + HexMetrics.GetFirstCorner(direction), v3);
         AddTriangleColor(
             cell.color,
             (cell.color + prevNeighbour.color + neighbour.color) / 3f,
+            bridgeColor
+            );
+
+        /*
+         * Add second of two triangles to fill in the gaps.
+         * The first vertex of the triangle is the cell's colour.
+         * The second vertex has the same colour as halfway across the bridge.
+         * The third vertex is a three-colour blend.
+         */
+        AddTriangle(v2, v4, center + HexMetrics.GetSecondCorner(direction));
+        AddTriangleColor(
+            cell.color,
+            bridgeColor,
             (cell.color + neighbour.color + nextNeighbour.color) / 3f
             );
     }
@@ -141,5 +181,51 @@ public class HexMesh : MonoBehaviour
         triangles.Add(vertexIndex);
         triangles.Add(vertexIndex + 1);
         triangles.Add(vertexIndex + 2);
+    }
+
+    /// <summary>
+    /// Add a trapezoid shape to fill in the gap between hexagons.
+    /// This shape contains 3 triangle shapes, so 6 triangles need to be added.
+    /// </summary>
+    /// <param name="v1"></param>
+    /// <param name="v2"></param>
+    /// <param name="v3"></param>
+    /// <param name="v4"></param>
+    private void AddQuad(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4)
+    {
+        int vertexIndex = vertices.Count;
+        vertices.Add(v1);
+        vertices.Add(v2);
+        vertices.Add(v3);
+        vertices.Add(v4);
+        triangles.Add(vertexIndex);
+        triangles.Add(vertexIndex + 2);
+        triangles.Add(vertexIndex + 1);
+        triangles.Add(vertexIndex + 1);
+        triangles.Add(vertexIndex + 2);
+        triangles.Add(vertexIndex + 3);
+    }
+
+    /// <summary>
+    /// Give each vertex of the quad a colour.
+    /// </summary>
+    /// <param name="c1"></param>
+    /// <param name="c2"></param>
+    /// <param name="c3"></param>
+    /// <param name="c4"></param>
+    private void AddQuadColor(Color c1, Color c2, Color c3, Color c4)
+    {
+        colors.Add(c1);
+        colors.Add(c2);
+        colors.Add(c3);
+        colors.Add(c4);
+    }
+
+    private void AddQuadColor(Color c1, Color c2)
+    {
+        colors.Add(c1);
+        colors.Add(c1);
+        colors.Add(c2);
+        colors.Add(c2);
     }
 }
