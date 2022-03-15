@@ -83,6 +83,42 @@ public class HexGrid : MonoBehaviour
         cell.coordinates = HexCoordinates.FromOffsetCoordinates(x, z);
         cell.color = defaultColor;
 
+        /*
+         * Upon creation of the cell, do the following checks to assign neighbours:
+         */
+
+        // Check if the cell has any neighbours to the west. When x = 0 it is the leftmost cell.
+        if (x > 0)
+        {
+            cell.SetNeighbour(HexDirection.W, cells[i - 1]);
+        }
+
+        // Check if the cell is on any row higher than the lowest one.
+        if (z > 0)
+        {
+            // Using a bitwise AND operator, check if the row is even or odd.
+            if ((z & 1) == 0)
+            {
+                // If the row is even, set the southeast neighbour of the cell.
+                cell.SetNeighbour(HexDirection.SE, cells[i - width]);
+                if (x > 0)
+                {
+                    // If it is also not the leftmost cell, set its southwest neighbour.
+                    cell.SetNeighbour(HexDirection.SW, cells[i - width - 1]);
+                }
+            }
+            else
+            {
+                // If the row is odd, set the southwest neighbour of the cell.
+                cell.SetNeighbour(HexDirection.SW, cells[i - width]);
+                if (x < width - 1)
+                {
+                    // Mirror the same logic for the odd row, setting the southeast neighbour.
+                    cell.SetNeighbour(HexDirection.SE, cells[i - width + 1]);
+                }
+            }
+        }
+
         Text label = Instantiate<Text>(cellLabelPrefab);
         label.rectTransform.SetParent(gridCanvas.transform, false);
         label.rectTransform.anchoredPosition =
