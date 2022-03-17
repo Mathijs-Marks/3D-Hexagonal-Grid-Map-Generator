@@ -121,4 +121,29 @@ public static class HexMetrics
         float h = step * horizontalTerraceStepSize;
         return Color.Lerp(a, b, h);
     }
+
+    /// <summary>
+    /// Check which type of connection is present between cells.
+    /// If the elevation between cells is the same, then the connection is flat.
+    /// If the elevation between cells is either 1 or -1, then the connection is a slope.
+    /// In any other case, the connection is a cliff.
+    /// </summary>
+    /// <param name="elevation1"></param>
+    /// <param name="elevation2"></param>
+    /// <returns></returns>
+    public static HexEdgeType GetEdgeType(int elevation1, int elevation2)
+    {
+        if (elevation1 == elevation2)
+        {
+            return HexEdgeType.Flat;
+        }
+
+        int delta = elevation2 - elevation1;
+        if (delta == 1 || delta == -1)
+        {
+            return HexEdgeType.Slope;
+        }
+
+        return HexEdgeType.Cliff;
+    }
 }

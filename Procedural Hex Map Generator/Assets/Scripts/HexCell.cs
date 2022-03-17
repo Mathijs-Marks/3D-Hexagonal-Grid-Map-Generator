@@ -62,4 +62,16 @@ public class HexCell : MonoBehaviour
         neighbours[(int) direction] = cell;
         cell.neighbours[(int) direction.Opposite()] = this;
     }
+
+    /// <summary>
+    /// Retrieve a cell's edge type connection in a certain direction.
+    /// </summary>
+    /// <param name="direction"></param>
+    /// <returns></returns>
+    public HexEdgeType GetEdgeType(HexDirection direction)
+    {
+        return HexMetrics.GetEdgeType(
+            elevation, neighbours[(int)direction].elevation
+        );
+    }
 }

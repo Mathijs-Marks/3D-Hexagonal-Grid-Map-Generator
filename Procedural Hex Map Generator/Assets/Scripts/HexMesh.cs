@@ -121,12 +121,17 @@ public class HexMesh : MonoBehaviour
         // In case of edge connections, override the height of the other end of the bridge.
         v3.y = v4.y = neighbour.Elevation * HexMetrics.elevationStep;
 
-        TriangulateEdgeTerraces(v1, v2, cell, v3, v4, neighbour);
-
-        // Create square quad with these vectors.
-        // Bridge quad only needs two colours.
-        //AddQuad(v1, v2, v3, v4);
-        //AddQuadColor(cell.color, neighbour.color);
+        if (cell.GetEdgeType(direction) == HexEdgeType.Slope)
+        {
+            TriangulateEdgeTerraces(v1, v2, cell, v3, v4, neighbour);
+        }
+        else
+        {
+            // Create square quad with these vectors.
+            // Bridge quad only needs two colours.
+            AddQuad(v1, v2, v3, v4);
+            AddQuadColor(cell.color, neighbour.color);
+        }
 
         HexCell nextNeighbour = cell.GetNeighbour(direction.Next());
         if (direction <= HexDirection.E && nextNeighbour != null)
