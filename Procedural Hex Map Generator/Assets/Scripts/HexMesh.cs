@@ -100,6 +100,7 @@ public class HexMesh : MonoBehaviour
     /// If the direction value is smaller and/or equal than E (1) AND there's a neighbour present:
     /// Add a triangle to fill in the gap and colour it.
     /// Implement elevation by overriding the Y axis.
+    /// Add terraces if the connection type is a slope, otherwise add a quad as normal.
     /// Add terraces by using interpolation between point a and b.
     /// </summary>
     /// <param name="direction"></param>
@@ -139,9 +140,35 @@ public class HexMesh : MonoBehaviour
             // In case of corner connections, override the height of the other end of the triangle.
             Vector3 v5 = v2 + HexMetrics.GetBridge(direction.Next());
             v5.y = nextNeighbour.Elevation * HexMetrics.elevationStep;
-            //AddTriangle(v2, v4, v2 + HexMetrics.GetBridge(direction.Next()));
-            AddTriangle(v2, v4, v5);
-            AddTriangleColor(cell.color, neighbour.color, nextNeighbour.color);
+
+            /*
+             * Check whether the cell being triangulated is lower than its neighbours, or tied for lowest.
+             * If yes, use it as the bottom cell.
+             * If the innermost if-statement fails, it means that the next neighbour is the lowest cell.
+             * Rotate the triangle counterclockwise to keep it correctly oriented.
+             * If the first if-statement already failed, it becomes a contest between the two neighbouring cells.
+             * If the edge neighbour is the lowest, then rotate clockwise, otherwise counterclockwise.
+             */
+
+            if (cell.Elevation <= neighbour.Elevation)
+            {
+                if (cell.Elevation <= nextNeighbour.Elevation)
+                {
+                    TriangulateCorner(v2, cell, v4, neighbour, v5, nextNeighbour);
+                }
+                else
+                {
+                    TriangulateCorner(v5, nextNeighbour, v2, cell, v4, neighbour);
+                }
+            }
+            else if (neighbour.Elevation <= nextNeighbour.Elevation)
+            {
+                TriangulateCorner(v4, neighbour, v5, nextNeighbour, v2, cell);
+            }
+            else
+            {
+                TriangulateCorner(v5, nextNeighbour, v2, cell, v4, neighbour);
+            }
         }
     }
 
@@ -186,6 +213,110 @@ public class HexMesh : MonoBehaviour
 
         AddQuad(v3, v4, endLeft, endRight);
         AddQuadColor(c2, endCell.color);
+    }
+
+    /// <summary>
+    /// Triangulate corner connections between hexagons.
+    /// Start from the bottom, then left, then right and add triangles.
+    /// </summary>
+    /// <param name="bottom"></param>
+    /// <param name="bottomCell"></param>
+    /// <param name="left"></param>
+    /// <param name="leftCell"></param>
+    /// <param name="right"></param>
+    /// <param name="rightCell"></param>
+    private void TriangulateCorner(
+        Vector3 bottom, HexCell bottomCell,
+        Vector3 left, HexCell leftCell,
+        Vector3 right, HexCell rightCell)
+    {
+        HexEdgeType lefEdgeType = bottomCell.GetEdgeType(leftCell);
+        HexEdgeType rightEdgeType = bottomCell.GetEdgeType(rightCell);
+
+        /*
+         * If both edges are slopes, then there are terraces on both the left and right side.
+         * Because the bottom cell is the lowest, those slopes will go up.
+         * This means the left and right cell have the same elevation, therefore the top connection is flat.
+         * This is a case of slope-slope-flat (SSF)
+         *
+         * If the right edge is flat, then begin terrace from the left instead of the bottom.
+         *
+         * If the left edge is flat, then begin terrace from the right instead of the bottom.
+         */
+        if (lefEdgeType == HexEdgeType.Slope)
+        {
+            if (rightEdgeType == HexEdgeType.Slope)
+            {
+                TriangulateCornerTerraces(
+                    bottom, bottomCell, left, leftCell, right, rightCell);
+                return;
+            }
+
+            if (rightEdgeType == HexEdgeType.Flat)
+            {
+                TriangulateCornerTerraces(
+                    left, leftCell, right, rightCell, bottom, bottomCell);
+                return;
+            }
+        }
+
+        if (rightEdgeType == HexEdgeType.Slope)
+        {
+            if (lefEdgeType == HexEdgeType.Flat)
+            {
+                TriangulateCorner(
+                    right, rightCell, bottom, bottomCell, left, leftCell);
+                return;
+            }
+        }
+
+        AddTriangle(bottom, left, right);
+        AddTriangleColor(bottomCell.color, leftCell.color, rightCell.color);
+    }
+
+    /// <summary>
+    /// Use the interpolation method to create terraces.
+    /// Begin with creating a shorter, steeper slope.
+    /// Using a for-loop, add the steps in between the beginning and the end.
+    /// Each step, the previous last two vertices become the new first two.
+    /// Compute the new vertices and colours and create a new triangle.
+    /// Lastly, finish the slope by creating a normal sloped triangle.
+    /// </summary>
+    /// <param name="begin"></param>
+    /// <param name="beginCell"></param>
+    /// <param name="left"></param>
+    /// <param name="leftCell"></param>
+    /// <param name="right"></param>
+    /// <param name="rightCell"></param>
+    private void TriangulateCornerTerraces(
+        Vector3 begin, HexCell beginCell,
+        Vector3 left, HexCell leftCell,
+        Vector3 right, HexCell rightCell)
+    {
+        Vector3 v3 = HexMetrics.TerraceLerp(begin, left, 1);
+        Vector3 v4 = HexMetrics.TerraceLerp(begin, right, 1);
+        Color c3 = HexMetrics.TerraceLerp(beginCell.color, leftCell.color, 1);
+        Color c4 = HexMetrics.TerraceLerp(beginCell.color, rightCell.color, 1);
+
+        AddTriangle(begin, v3, v4);
+        AddTriangleColor(beginCell.color, c3, c4);
+
+        for (int i = 2; i < HexMetrics.terraceSteps; i++)
+        {
+            Vector3 v1 = v3;
+            Vector3 v2 = v4;
+            Color c1 = c3;
+            Color c2 = c4;
+            v3 = HexMetrics.TerraceLerp(begin, left, i);
+            v4 = HexMetrics.TerraceLerp(begin, right, i);
+            c3 = HexMetrics.TerraceLerp(beginCell.color, leftCell.color, i);
+            c4 = HexMetrics.TerraceLerp(beginCell.color, rightCell.color, i);
+            AddQuad(v1, v2, v3, v4);
+            AddQuadColor(c1, c2, c3, c4);
+        }
+
+        AddQuad(v3, v4, left, right);
+        AddQuadColor(c3, c4, leftCell.color, rightCell.color);
     }
 
     /// <summary>

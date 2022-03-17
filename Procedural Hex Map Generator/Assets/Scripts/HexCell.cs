@@ -74,4 +74,11 @@ public class HexCell : MonoBehaviour
             elevation, neighbours[(int)direction].elevation
         );
     }
+
+    public HexEdgeType GetEdgeType(HexCell otherCell)
+    {
+        return HexMetrics.GetEdgeType(
+            elevation, otherCell.elevation
+            );
+    }
 }
