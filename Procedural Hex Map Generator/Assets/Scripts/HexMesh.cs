@@ -99,6 +99,8 @@ public class HexMesh : MonoBehaviour
     /// Retrieve the next neighbour of the hexagon.
     /// If the direction value is smaller and/or equal than E (1) AND there's a neighbour present:
     /// Add a triangle to fill in the gap and colour it.
+    /// Implement elevation by overriding the Y axis.
+    /// Add terraces by using interpolation between point a and b.
     /// </summary>
     /// <param name="direction"></param>
     /// <param name="cell"></param>
@@ -119,10 +121,12 @@ public class HexMesh : MonoBehaviour
         // In case of edge connections, override the height of the other end of the bridge.
         v3.y = v4.y = neighbour.Elevation * HexMetrics.elevationStep;
 
+        TriangulateEdgeTerraces(v1, v2, cell, v3, v4, neighbour);
+
         // Create square quad with these vectors.
         // Bridge quad only needs two colours.
-        AddQuad(v1, v2, v3, v4);
-        AddQuadColor(cell.color, neighbour.color);
+        //AddQuad(v1, v2, v3, v4);
+        //AddQuadColor(cell.color, neighbour.color);
 
         HexCell nextNeighbour = cell.GetNeighbour(direction.Next());
         if (direction <= HexDirection.E && nextNeighbour != null)
@@ -134,6 +138,49 @@ public class HexMesh : MonoBehaviour
             AddTriangle(v2, v4, v5);
             AddTriangleColor(cell.color, neighbour.color, nextNeighbour.color);
         }
+    }
+
+    /// <summary>
+    /// Use the interpolation method to create terraces.
+    /// Begin with creating a shorter, steeper slope.
+    /// Using a for-loop, add the steps in between the beginning and the end.
+    /// Each step, the previous last two vertices become the new first two.
+    /// Compute the new vertices and colours and create a new quad.
+    /// Lastly, finish the slope by creating a normal sloped quad.
+    /// </summary>
+    /// <param name="beginLeft"></param>
+    /// <param name="beginRight"></param>
+    /// <param name="beginCell"></param>
+    /// <param name="endLeft"></param>
+    /// <param name="endRight"></param>
+    /// <param name="endCell"></param>
+    private void TriangulateEdgeTerraces(
+        Vector3 beginLeft, Vector3 beginRight, HexCell beginCell,
+        Vector3 endLeft, Vector3 endRight, HexCell endCell)
+    {
+        Vector3 v3 = HexMetrics.TerraceLerp(beginLeft, endLeft, 1);
+        Vector3 v4 = HexMetrics.TerraceLerp(beginRight, endRight, 1);
+        Color c2 = HexMetrics.TerraceLerp(beginCell.color, endCell.color, 1);
+
+        // Create square quad with these vectors.
+        // Bridge quad only needs two colours.
+        AddQuad(beginLeft, beginRight, v3, v4);
+        AddQuadColor(beginCell.color, c2);
+
+        for (int i = 2; i < HexMetrics.terraceSteps; i++)
+        {
+            Vector3 v1 = v3;
+            Vector3 v2 = v4;
+            Color c1 = c2;
+            v3 = HexMetrics.TerraceLerp(beginLeft, endLeft, i);
+            v4 = HexMetrics.TerraceLerp(beginRight, endRight, i);
+            c2 = HexMetrics.TerraceLerp(beginCell.color, endCell.color, i);
+            AddQuad(v1, v2, v3, v4);
+            AddQuadColor(c1, c2);
+        }
+
+        AddQuad(v3, v4, endLeft, endRight);
+        AddQuadColor(c2, endCell.color);
     }
 
     /// <summary>

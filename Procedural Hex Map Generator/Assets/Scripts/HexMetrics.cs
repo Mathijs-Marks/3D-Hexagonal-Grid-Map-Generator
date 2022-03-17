@@ -17,6 +17,10 @@ public static class HexMetrics
     public const float solidFactor = 0.75f;
     public const float blendFactor = 1f - solidFactor;
     public const float elevationStep = 5f;
+    public const int terracesPerSlope = 2;
+    public const int terraceSteps = terracesPerSlope * 2 + 1;
+    public const float horizontalTerraceStepSize = 1f / terraceSteps;
+    public const float verticalTerraceStepSize = 1f / (terracesPerSlope + 1);
 
     private static Vector3[] corners =
     {
@@ -83,5 +87,38 @@ public static class HexMetrics
     {
         return (corners[(int) direction] + corners[(int) direction + 1]) * 
                blendFactor;
+    }
+
+    /// <summary>
+    /// Interpolate each step along a slope.
+    /// For horizontal, interpolate between point a and b and multiply it with the horizontal step size.
+    /// For vertical, interpolate between point a and b and multiply it with the vertical step size.
+    /// The vertical step size is determined by adding 1 to a step and multiplying it by two.
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <param name="step"></param>
+    /// <returns></returns>
+    public static Vector3 TerraceLerp(Vector3 a, Vector3 b, int step)
+    {
+        float horizontal = step * horizontalTerraceStepSize;
+        a.x += (b.x - a.x) * horizontal;
+        a.z += (b.z - a.z) * horizontal;
+        float vertical = ((step + 1) / 2) * verticalTerraceStepSize;
+        a.y += (b.y - a.y) * vertical;
+        return a;
+    }
+
+    /// <summary>
+    /// Interpolate colour as if the connection is flat on the Y axis.
+    /// </summary>
+    /// <param name="a"></param>
+    /// <param name="b"></param>
+    /// <param name="step"></param>
+    /// <returns></returns>
+    public static Color TerraceLerp(Color a, Color b, int step)
+    {
+        float h = step * horizontalTerraceStepSize;
+        return Color.Lerp(a, b, h);
     }
 }
