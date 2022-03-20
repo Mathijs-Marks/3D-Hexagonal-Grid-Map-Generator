@@ -277,6 +277,22 @@ public class HexMesh : MonoBehaviour
             return;
         }
 
+        if (leftCell.GetEdgeType(rightCell) == HexEdgeType.Slope)
+        {
+            if (leftCell.Elevation < rightCell.Elevation)
+            {
+                TriangulateCornerCliffTerraces(
+                    right, rightCell, bottom, bottomCell, left, leftCell);
+            }
+            else
+            {
+                TriangulateCornerTerracesCliff(
+                    left, leftCell, right, rightCell, bottom, bottomCell);
+            }
+
+            return;
+        }
+
         AddTriangle(bottom, left, right);
         AddTriangleColor(bottomCell.color, leftCell.color, rightCell.color);
     }
@@ -347,6 +363,9 @@ public class HexMesh : MonoBehaviour
         Vector3 right, HexCell rightCell)
     {
         float b = 1f / (rightCell.Elevation - beginCell.Elevation);
+        if (b < 0)
+            b = -b;
+
         Vector3 boundary = Vector3.Lerp(begin, right, b);
         Color boundaryColor = Color.Lerp(beginCell.color, rightCell.color, b);
 
@@ -380,6 +399,9 @@ public class HexMesh : MonoBehaviour
         Vector3 right, HexCell rightCell)
     {
         float b = 1f / (leftCell.Elevation - beginCell.Elevation);
+        if (b < 0)
+            b = -b;
+
         Vector3 boundary = Vector3.Lerp(begin, left, b);
         Color boundaryColor = Color.Lerp(beginCell.color, leftCell.color, b);
 
