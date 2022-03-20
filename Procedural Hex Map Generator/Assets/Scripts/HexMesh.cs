@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 /// <summary>
@@ -258,6 +259,9 @@ public class HexMesh : MonoBehaviour
                     left, leftCell, right, rightCell, bottom, bottomCell);
                 return;
             }
+            TriangulateCornerTerracesCliff(
+                bottom, bottomCell, left, leftCell, right, rightCell);
+            return;
         }
 
         if (rightEdgeType == HexEdgeType.Slope)
@@ -317,6 +321,84 @@ public class HexMesh : MonoBehaviour
 
         AddQuad(v3, v4, left, right);
         AddQuadColor(c3, c4, leftCell.color, rightCell.color);
+    }
+
+    /// <summary>
+    /// Method to merge slopes and cliffs together.
+    /// Split into two parts:
+    /// Bottom part: collapse terraces at a boundary point that lies along the cliff.
+    /// Place the boundary point one elevation level above the bottom cell.
+    /// Find this point by interpolating based on elevation difference.
+    /// Top part: if there's a slope, add a rotated boundary triangle.
+    /// Otherwise a simple triangle suffices.
+    /// </summary>
+    /// <param name="begin"></param>
+    /// <param name="beginCell"></param>
+    /// <param name="left"></param>
+    /// <param name="leftCell"></param>
+    /// <param name="right"></param>
+    /// <param name="rightCell"></param>
+    private void TriangulateCornerTerracesCliff(
+        Vector3 begin, HexCell beginCell,
+        Vector3 left, HexCell leftCell,
+        Vector3 right, HexCell rightCell)
+    {
+        float b = 1f / (rightCell.Elevation - beginCell.Elevation);
+        Vector3 boundary = Vector3.Lerp(begin, right, b);
+        Color boundaryColor = Color.Lerp(beginCell.color, rightCell.color, b);
+
+        TriangulateBoundaryTriangle(
+            begin, beginCell, left, leftCell, boundary, boundaryColor);
+
+        if (leftCell.GetEdgeType(rightCell) == HexEdgeType.Slope)
+        {
+            TriangulateBoundaryTriangle(
+                left, leftCell, right, rightCell, boundary, boundaryColor);
+        }
+        else
+        {
+            AddTriangle(left, right, boundary);
+            AddTriangleColor(leftCell.color, rightCell.color, boundaryColor);
+        }
+    }
+
+    /// <summary>
+    /// Connect terraces to a cliff.
+    /// Collapse each step towards a boundary point that lies along a cliff.
+    /// 
+    /// </summary>
+    /// <param name="begin"></param>
+    /// <param name="beginCell"></param>
+    /// <param name="left"></param>
+    /// <param name="leftCell"></param>
+    /// <param name="boundary"></param>
+    /// <param name="boundaryColor"></param>
+    private void TriangulateBoundaryTriangle(
+        Vector3 begin, HexCell beginCell,
+        Vector3 left, HexCell leftCell,
+        Vector3 boundary, Color boundaryColor)
+    {
+        Vector3 v2 = HexMetrics.TerraceLerp(begin, left, 1);
+        Color c2 = HexMetrics.TerraceLerp(beginCell.color, leftCell.color, 1);
+
+        // First collapsing step
+        AddTriangle(begin, v2, boundary);
+        AddTriangleColor(beginCell.color, c2, boundaryColor);
+
+        // Collapsing steps in between
+        for (int i = 2; i < HexMetrics.terraceSteps; i++)
+        {
+            Vector3 v1 = v2;
+            Color c1 = c2;
+            v2 = HexMetrics.TerraceLerp(begin, left, i);
+            c2 = HexMetrics.TerraceLerp(beginCell.color, leftCell.color, i);
+            AddTriangle(v1, v2, boundary);
+            AddTriangleColor(c1, c2, boundaryColor);
+        }
+
+        // Last collapsing step
+        AddTriangle(v2, left, boundary);
+        AddTriangleColor(c2, leftCell.color, boundaryColor);
     }
 
     /// <summary>
