@@ -124,21 +124,31 @@ public class HexGrid : MonoBehaviour
         label.rectTransform.anchoredPosition =
             new Vector2(position.x, position.z);
         label.text = cell.coordinates.ToStringOnSeparateLines();
+
+        // Reposition UI labels when changing elevation.
+        cell.uiRect = label.rectTransform;
     }
 
     /// <summary>
-    /// Once the ray hits the cell,
-    /// convert cell coordinates to the appropriate array index.
-    /// Then grab the cell, change its color, triangulate the mesh again.
+    /// Method to select individual cells.
+    /// Convert cell coordinates to the appropriate array index.
+    /// Return the index of the cells array.
     /// </summary>
     /// <param name="position"></param>
-    public void ColorCell(Vector3 position, Color color)
+    /// <returns></returns>
+    public HexCell GetCell(Vector3 position)
     {
         position = transform.InverseTransformPoint(position);
         HexCoordinates coordinates = HexCoordinates.FromPosition(position);
         int index = coordinates.X + coordinates.Z * width + coordinates.Z / 2;
-        HexCell cell = cells[index];
-        cell.color = color;
+        return cells[index];
+    }
+
+    /// <summary>
+    /// Triangulate all cells when hitting a refresh.
+    /// </summary>
+    public void Refresh()
+    {
         hexMesh.Triangulate(cells);
     }
 }
