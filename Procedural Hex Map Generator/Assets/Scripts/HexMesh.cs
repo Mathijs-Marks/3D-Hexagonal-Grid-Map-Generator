@@ -235,13 +235,12 @@ public class HexMesh : MonoBehaviour
         HexEdgeType rightEdgeType = bottomCell.GetEdgeType(rightCell);
 
         /*
+         * TODO: Convert if/else mess to a switch statement!
          * If both edges are slopes, then there are terraces on both the left and right side.
          * Because the bottom cell is the lowest, those slopes will go up.
          * This means the left and right cell have the same elevation, therefore the top connection is flat.
          * This is a case of slope-slope-flat (SSF)
-         *
          * If the right edge is flat, then begin terrace from the left instead of the bottom.
-         *
          * If the left edge is flat, then begin terrace from the right instead of the bottom.
          */
         if (lefEdgeType == HexEdgeType.Slope)
@@ -250,34 +249,54 @@ public class HexMesh : MonoBehaviour
             {
                 TriangulateCornerTerraces(
                     bottom, bottomCell, left, leftCell, right, rightCell);
-                return;
             }
 
-            if (rightEdgeType == HexEdgeType.Flat)
+            /*
+             * If the right edge is flat, begin terracing from the left instead of the bottom.
+             * This covers SFS
+             */
+            else if (rightEdgeType == HexEdgeType.Flat)
             {
                 TriangulateCornerTerraces(
                     left, leftCell, right, rightCell, bottom, bottomCell);
-                return;
             }
-            TriangulateCornerTerracesCliff(
-                bottom, bottomCell, left, leftCell, right, rightCell);
-            return;
+
+            /*
+             * If the right edge is either a slope or a cliff, we assume the cases SCS and SCC.
+             */
+            else
+            {
+                TriangulateCornerTerracesCliff(
+                    bottom, bottomCell, left, leftCell, right, rightCell);
+            }
         }
 
-        if (rightEdgeType == HexEdgeType.Slope)
+        /*
+         * If the right edge is a slope and the left edge is flat, begin terracing from the right instead of the bottom.
+         * This covers FSS
+         */
+        else if (rightEdgeType == HexEdgeType.Slope)
         {
             if (lefEdgeType == HexEdgeType.Flat)
             {
-                TriangulateCorner(
+                TriangulateCornerTerraces(
                     right, rightCell, bottom, bottomCell, left, leftCell);
-                return;
             }
-            TriangulateCornerCliffTerraces(
-                bottom, bottomCell, left, leftCell, right, rightCell);
-            return;
+            
+            /*
+             * If the left edge is either a slope or a cliff, we assume the cases CSS and CSC.
+             */
+            else
+            {
+                TriangulateCornerCliffTerraces(
+                    bottom, bottomCell, left, leftCell, right, rightCell);
+            }
         }
 
-        if (leftCell.GetEdgeType(rightCell) == HexEdgeType.Slope)
+        /*
+         * If both edges of a cell are cliffs, then we assume the cases CCSR and CCSL.
+         */
+        else if (leftCell.GetEdgeType(rightCell) == HexEdgeType.Slope)
         {
             if (leftCell.Elevation < rightCell.Elevation)
             {
@@ -289,12 +308,22 @@ public class HexMesh : MonoBehaviour
                 TriangulateCornerTerracesCliff(
                     left, leftCell, right, rightCell, bottom, bottomCell);
             }
-
-            return;
         }
-
-        AddTriangle(bottom, left, right);
-        AddTriangleColor(bottomCell.color, leftCell.color, rightCell.color);
+        
+        /*
+         * Final else-statement covers all remaining cases that aren't covered yet.
+         * These cases are:
+         * - FFF
+         * - CCF
+         * - CCCR
+         * - CCCL
+         * These cases are all covered with a single triangle.
+         */
+        else
+        {
+            AddTriangle(bottom, left, right);
+            AddTriangleColor(bottomCell.color, leftCell.color, rightCell.color);
+        }
     }
 
     /// <summary>
@@ -363,6 +392,9 @@ public class HexMesh : MonoBehaviour
         Vector3 right, HexCell rightCell)
     {
         float b = 1f / (rightCell.Elevation - beginCell.Elevation);
+
+        // When triangulating the CCSR and CCSL cases, triangulation is done from top to bottom.
+        // This causes the boundary interpolators to become negative. Invert these to rectify that.
         if (b < 0)
             b = -b;
 
@@ -399,6 +431,9 @@ public class HexMesh : MonoBehaviour
         Vector3 right, HexCell rightCell)
     {
         float b = 1f / (leftCell.Elevation - beginCell.Elevation);
+
+        // When triangulating the CCSR and CCSL cases, triangulation is done from top to bottom.
+        // This causes the boundary interpolators to become negative. Invert these to rectify that.
         if (b < 0)
             b = -b;
 
