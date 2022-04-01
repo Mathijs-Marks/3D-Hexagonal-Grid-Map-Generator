@@ -1,9 +1,26 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class NoiseMapGenerator : MonoBehaviour
 {
+    public enum DrawMode
+    {
+        NoiseMap,
+        ColourMap
+    };
+
+    public DrawMode drawMode;
+
+    [Serializable]
+    public struct TerrainType
+    {
+        public string name;
+        public float height;
+        public Color colour;
+    }
+
     public int mapWidth;
     public int mapHeight;
     public float noiseScale;
@@ -17,13 +34,39 @@ public class NoiseMapGenerator : MonoBehaviour
 
     public bool autoUpdate;
 
+    public TerrainType[] regions;
+
     public void GenerateMap()
     {
         float[,] noiseMap = PerlinNoise.GenerateNoiseMap(
             seed, mapWidth, mapHeight, noiseScale, octaves, persistence, lacunarity, offset);
 
+        Color[] colourMap = new Color[mapWidth * mapHeight];
+        for (int y = 0; y < mapHeight; y++)
+        {
+            for (int x = 0; x < mapWidth; x++)
+            {
+                float currentHeight = noiseMap[x, y];
+                for (int i = 0; i < regions.Length; i++)
+                {
+                    if (currentHeight <= regions[i].height)
+                    {
+                        colourMap[y * mapWidth + x] = regions[i].colour;
+                        break;
+                    }
+                }
+            }
+        }
+
         NoiseMapDisplay display = FindObjectOfType<NoiseMapDisplay>();
-        display.DrawNoiseMap(noiseMap);
+        if (drawMode == DrawMode.NoiseMap)
+        {
+            display.DrawTexture(TextureGenerator.TextureFromHeightMap(noiseMap));
+        }
+        else if (drawMode == DrawMode.ColourMap)
+        {
+            display.DrawTexture(TextureGenerator.TextureFromColourMap(colourMap, mapWidth, mapHeight));
+        }
     }
 
     private void OnValidate()
