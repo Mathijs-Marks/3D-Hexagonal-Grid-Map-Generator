@@ -17,6 +17,8 @@ public class HexMapEditor : MonoBehaviour
     private void Awake()
     {
         SelectColor(0);
+        Shader.EnableKeyword("HEX_MAP_EDIT_MODE");
+        SetEditMode(true);
     }
 
     private void Update()
@@ -72,5 +74,10 @@ public class HexMapEditor : MonoBehaviour
     public void SetElevation(float elevation)
     {
         activeElevation = (int) elevation;
+    }
+
+    public void SetEditMode(bool toggle)
+    {
+        enabled = toggle;
     }
 }

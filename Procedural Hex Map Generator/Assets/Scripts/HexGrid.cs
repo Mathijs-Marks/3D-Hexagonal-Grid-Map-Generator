@@ -37,13 +37,7 @@ public class HexGrid : MonoBehaviour
 
         cells = new HexCell[height * width];
 
-        for (int z = 0, i = 0; z < height; z++)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                CreateCell(x, z, i++);
-            }
-        }
+        CreateMap();
     }
 
     /// <summary>
@@ -52,6 +46,17 @@ public class HexGrid : MonoBehaviour
     private void Start()
     {
         hexMesh.Triangulate(cells);
+    }
+
+    public void CreateMap()
+    {
+        for (int z = 0, i = 0; z < height; z++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                CreateCell(x, z, i++);
+            }
+        }
     }
 
     /// <summary>
