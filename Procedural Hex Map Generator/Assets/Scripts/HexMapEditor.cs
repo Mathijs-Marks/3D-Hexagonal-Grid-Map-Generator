@@ -11,6 +11,7 @@ public class HexMapEditor : MonoBehaviour
 {
     public Color[] colors;
     public HexGrid HexGrid;
+    public HexMapGenerator generator;
     private Color activeColor;
     private int activeElevation;
 
@@ -55,6 +56,12 @@ public class HexMapEditor : MonoBehaviour
     {
         cell.color = activeColor;
         cell.Elevation = activeElevation;
+        HexGrid.Refresh();
+    }
+
+    public void GenerateMap()
+    {
+        generator.GenerateMap();
         HexGrid.Refresh();
     }
 

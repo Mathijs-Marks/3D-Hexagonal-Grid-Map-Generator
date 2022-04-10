@@ -15,7 +15,7 @@ public class HexGrid : MonoBehaviour
     public int height = 6;
 
     public Color defaultColor = Color.white;
-    //public Color touchedColor = Color.magenta;
+    public Color touchedColor = Color.magenta;
 
     public HexCell cellPrefab;
     private HexCell[] cells;
@@ -147,6 +147,21 @@ public class HexGrid : MonoBehaviour
         HexCoordinates coordinates = HexCoordinates.FromPosition(position);
         int index = coordinates.X + coordinates.Z * width + coordinates.Z / 2;
         return cells[index];
+    }
+
+    public HexCell GetCellByOffset(int xOffset, int zOffset)
+    {
+        return cells[xOffset + zOffset * width];
+    }
+
+    public HexCell GetCellByIndex(int cellIndex)
+    {
+        return cells[cellIndex];
+    }
+
+    public HexCell GetAllCells(int width, int height)
+    {
+        return cells[width * height];
     }
 
     /// <summary>
